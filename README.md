@@ -1,0 +1,85 @@
+
+# Custom Authentication & RBAC System
+
+## Стек
+- Django 4.2
+- Django REST Framework
+- SQLite
+- JWT (ручная реализация, без встроенного auth фреймворка)
+- Собственная RBAC система
+
+## Запуск
+```bash
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py init_demo_data
+python manage.py runserver
+```
+
+Демо-админ: `admin@test.com` / `admin123`
+
+---
+
+## Схема разграничения прав доступа (RBAC)
+
+Система построена по модели **Role-Based Access Control**: доступ к ресурсам определяется не напрямую пользователем, а через роли. Правило доступа задаётся парой **ресурс + действие** (permission).
+
+### Составляющие схемы
+
+| Сущность | Описание |
+|----------|----------|
+| **User** | Пользователь (email, имя, фамилия, отчество, is_active). Не хранит права напрямую. |
+| **Role** | Роль (например: `admin`, `user`). Группирует набор разрешений. |
+| **Permission** | Разрешение: пара `(resource, action)`. Определяет, *к какому ресурсу* и *какое действие* разрешено (например: `articles:read`, `rbac:manage`). |
+| **UserRole** | Связь «пользователь — роль». У пользователя может быть несколько ролей. |
+| **RolePermission** | Связь «роль — разрешение». Правило: «роль R даёт разрешение P». |
+
+### Правило доступа
+
+Пользователю разрешено действие `action` над ресурсом `resource` тогда и только тогда, когда у него есть хотя бы одна роль, у которой есть разрешение `(resource, action)`.
+
+- **Ресурс** — логическое имя объекта (например: `articles`, `reports`, `rbac`).
+- **Действие** — тип операции (например: `read`, `write`, `manage`).
+
+### Ошибки HTTP
+
+- **401 Unauthorized** — по запросу не удалось определить залогиненного пользователя (нет/неверный токен, пользователь не найден или `is_active=False`).
+- **403 Forbidden** — пользователь определён, но у него нет нужного разрешения (resource, action) по правилам RBAC.
+
+---
+
+## API
+
+### Пользователь (без токена для register/login)
+- `POST /api/users/register/` — регистрация (email, password, password_confirm, first_name, last_name, patronymic).
+- `POST /api/users/login/` — вход (email, password), в ответе JWT-токен.
+
+### Пользователь (с заголовком `Authorization: Bearer <token>`)
+- `POST /api/users/logout/` — выход (клиент отбрасывает токен).
+- `GET /api/users/profile/` — текущий профиль.
+- `PATCH /api/users/profile/` — обновление профиля.
+- `POST /api/users/delete-account/` — мягкое удаление (is_active=False), после этого вход невозможен.
+
+### Мок-ресурсы (проверка прав)
+- `GET /api/articles/` — список статей (требуется разрешение `articles:read`).
+- `GET /api/reports/` — список отчётов (требуется разрешение `reports:read`; в демо только у admin).
+
+### Админ RBAC (требуется разрешение `rbac:manage`)
+- `GET/POST /api/admin/roles/` — список ролей, создание роли.
+- `GET/PATCH/DELETE /api/admin/roles/<id>/` — просмотр/изменение/удаление роли.
+- `GET/POST /api/admin/permissions/` — список разрешений, создание разрешения.
+- `GET /api/admin/roles/<id>/permissions/` — список разрешений роли (правила доступа роли).
+- `POST /api/admin/roles/<id>/permissions/add/` — добавить разрешение роли (body: `permission_id`).
+- `DELETE /api/admin/roles/<id>/permissions/<permission_id>/` — удалить разрешение у роли.
+- `POST /api/admin/users/<user_id>/roles/` — назначить роль пользователю (body: `role_id`).
+
+---
+
+## Соответствие требованиям
+
+- **Собственная аутентификация**: кастомная модель User, JWT (ручная выдача и проверка), отдельный класс `JWTAuthentication` для DRF — не опора на встроенный auth «из коробки».
+- **Схема доступа**: описана выше; таблицы User, Role, Permission, UserRole, RolePermission; тестовые данные — `init_demo_data`.
+- **401/403**: при отсутствии/невалидном пользователе — 401; при отсутствии разрешения — 403.
+- **API для правил**: администратор может получать и изменять роли, разрешения и связи роль–разрешение и пользователь–роль через перечисленные эндпоинты.
