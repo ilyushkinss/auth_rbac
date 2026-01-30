@@ -14,7 +14,7 @@ python3 -m venv .venv
 source .venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python3 manage.py migrate
-python3 manage.py init_demo_data
+python3 manage.py init_demo_data  # Загрузка тестовых данных
 python3 manage.py runserver
 ```
 
