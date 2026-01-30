@@ -10,15 +10,15 @@
 
 ## Запуск
 ```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python manage.py migrate
-python manage.py init_demo_data
-python manage.py runserver
+python3 manage.py migrate
+python3 manage.py init_demo_data
+python3 manage.py runserver
 ```
 
-Демо-админ: `admin@test.com` / `admin123`
+Админ: `login: admin@test.com` / `password: admin123`
 
 ---
 
