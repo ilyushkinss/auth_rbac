@@ -10,15 +10,15 @@
 
 ## Запуск
 ```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python manage.py migrate
-python manage.py init_demo_data
-python manage.py runserver
+python3 manage.py migrate
+python3 manage.py init_demo_data  # Загрузка тестовых данных
+python3 manage.py runserver
 ```
 
-Демо-админ: `admin@test.com` / `admin123`
+Админ: `login: admin@test.com` / `password: admin123`
 
 ---
 
@@ -38,9 +38,9 @@ python manage.py runserver
 
 ### Правило доступа
 
-Пользователю разрешено действие `action` над ресурсом `resource` тогда и только тогда, когда у него есть хотя бы одна роль, у которой есть разрешение `(resource, action)`.
+Пользователю разрешено действие над ресурсом тогда и только тогда, когда у него есть хотя бы одна роль, у которой есть разрешение.
 
-- **Ресурс** — логическое имя объекта (например: `articles`, `reports`, `rbac`).
+- **Ресурс** — имя объекта (например: `articles`, `reports`, `rbac`).
 - **Действие** — тип операции (например: `read`, `write`, `manage`).
 
 ### Ошибки HTTP
@@ -74,12 +74,3 @@ python manage.py runserver
 - `POST /api/admin/roles/<id>/permissions/add/` — добавить разрешение роли (body: `permission_id`).
 - `DELETE /api/admin/roles/<id>/permissions/<permission_id>/` — удалить разрешение у роли.
 - `POST /api/admin/users/<user_id>/roles/` — назначить роль пользователю (body: `role_id`).
-
----
-
-## Соответствие требованиям
-
-- **Собственная аутентификация**: кастомная модель User, JWT (ручная выдача и проверка), отдельный класс `JWTAuthentication` для DRF — не опора на встроенный auth «из коробки».
-- **Схема доступа**: описана выше; таблицы User, Role, Permission, UserRole, RolePermission; тестовые данные — `init_demo_data`.
-- **401/403**: при отсутствии/невалидном пользователе — 401; при отсутствии разрешения — 403.
-- **API для правил**: администратор может получать и изменять роли, разрешения и связи роль–разрешение и пользователь–роль через перечисленные эндпоинты.
